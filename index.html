@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <script src="js/createjs.js"></script>
+        <script src="js/easeljs.js"></script>
+        <script src="js/jquery.js"></script>
+        <!-- OBJECT SCRIPTS-->
+        <script src="Plane.js"></script>
+        <script src="Platforms.js"></script>
+        <script src="Collision.js"></script>
+        <script src="Content.js"></script>
+        <script src="phonegap.js"></script>
+        <meta charset="utf-8" />
+        <title></title>
+    </head>
+    <body>
+        <canvas id="mycanvas"></canvas>
+        <script>
+            //Resizing Canvas
+            //Need to fix SCALING
+            console.log("HELLO MWORLD")
+
+
+            var canvas = document.getElementById("mycanvas");
+            var ctx = canvas.getContext("2d");
+
+            console.log("got to document ready");
+
+            $('document').ready(function () {
+
+                //Global Variables
+                //SCreen Properties
+                var width = window.innerWidth;
+                var height = window.innerHeight;
+                var dwidth = 1600;
+                var dheight = 900;
+                var scale = Math.min(width / dwidth, height / dheight);
+                ctx.scale = scale;
+                ctx.canvas.width = dwidth;
+                ctx.canvas.height = dheight;
+                var barwidth = 160;
+                //Main Objects
+                var stage = new createjs.Stage("mycanvas"); //stage
+                createjs.Touch.enable(stage);
+                var plane = new paperplane(barwidth + 1, 4); //Plane Object
+                var gameplatforms = new platforms(); //Platforms Object
+                var Content = new ContentManager(); //Content Object
+                var score = new createjs.Text("0", "50px Times", "White"); //Score Object
+                score.x = 1330 - score.getMeasuredWidth() / 2;
+                score.y = 60;
+
+                //Info Varibales
+                var currentscore = 0; //Score, Number of platforms passed
+                var side = true; //Boolean value to figure out which side to create the rectangle
+                var scale = Math.min(width / dwidth, height / dheight); //scale factor
+                //HighScore Setting
+                if (localStorage.getItem("Highscore") == null) {
+                    localStorage.setItem("Highscore", 0);
+                }
+                //Setting UP the Touch Squares(squares that are clicked to Activate Commands
+                var touchsquareL = new createjs.Shape();
+                touchsquareL.hitArea = new createjs.Shape(new createjs.Graphics().beginFill("#f00").drawRect(0, 0, dwidth / 2, dheight));
+                touchsquareL.on("click", function () {
+                    if (plane.angle == 0) {
+                        plane.angle = 0;
+                    } else {
+                        plane.angle -= 1;
+                    };
+                    plane.changespeed();
+                });
+                var touchsquareR = new createjs.Shape();
+                touchsquareR.hitArea = new createjs.Shape(new createjs.Graphics().beginFill("#f00").drawRect(dwidth / 2, 0, dwidth / 2, dheight));
+                touchsquareR.on("click", function () {
+                    if (plane.angle == 4) {
+                        plane.angle = 4;
+                    } else {
+                        plane.angle += 1;
+                    };
+                    plane.changespeed();
+                });
+
+
+                //Starting the Download of Resources
+                Content.SetDownloadCompleted(startscreen)
+                Content.StartDownload();
+
+                function startscreen() {
+                    var startimage = new createjs.Bitmap(Content.StartScreen).set({ x: 0, y: 0 });
+                    startimage.on("click", function () {
+                        createjs.Sound.play("StartSound");
+                        start();
+                    });
+                    stage.addChild(startimage);
+                    stage.update();
+                }
+
+                function start() {
+                    //Adding Background, Bars, and Score
+                    stage.addChild(new createjs.Bitmap(Content.background).set({ x: 0, y: 0 })); //Adding the Background
+                    stage.addChild(new createjs.Shape()).set({ x: 0, y: 0 }).graphics.f("black").dr(0, 0, barwidth, dheight);
+                    stage.addChild(new createjs.Shape()).set({ x: dwidth - barwidth, y: 0 }).graphics.f("black").dr(0, 0, barwidth, dheight);
+                    stage.addChild(new createjs.Bitmap(Content.ScoreBackground).set({ x: 1225, y: 20 }));
+                    stage.addChild(score); //Adding the Score
+
+                    stage.addChild(plane.shape); //Adding the Plane
+                    stage.addChild(touchsquareL);
+                    stage.addChild(touchsquareR);
+
+                    //Setting the Images
+                    gameplatforms.branch1L = Content.branch1L; //BRANCH IMAGES
+                    gameplatforms.branch1R = Content.branch1R;
+                    gameplatforms.branch2L = Content.branch2L;
+                    gameplatforms.branch2R = Content.branch2R;
+                    gameplatforms.branch3L = Content.branch3L;
+                    gameplatforms.branch3R = Content.branch3R;
+                    plane.Bird1L = Content.bird1L;
+                    plane.Bird1R = Content.bird1R;
+                    plane.Bird2L = Content.bird2L;
+                    plane.Bird2R = Content.bird2R;
+                    plane.Bird3 = Content.bird3;
+                    //Reseting plane position and score
+                    plane.shape.x = barwidth + 1;
+                    plane.shape.image = plane.Bird1R;
+                    currentscore = 0;
+
+                    //Adding the Initial 3 Platforms
+                    var y = 0;
+                    var yadd = dheight / 2;
+                    for (i = 0; i < 3; i++) {
+                        pw = 382;
+                        ph = 90;
+                        if (side) {
+                            var platform = new createjs.Bitmap(gameplatforms.branch2L);
+                            platform.x = barwidth;
+                        } else {
+                            var platform = new createjs.Bitmap(gameplatforms.branch2R);
+                            platform.x = dwidth - pw - barwidth;
+                        }
+                        side = !(side);
+                        platform.setBounds(0, 0, pw, ph);
+                        var platformcontainer = new createjs.Container();
+                        platformcontainer.addChild(platform)
+                        platformcontainer.y = y;
+                        y += yadd;
+                        gameplatforms.container.push(platformcontainer);
+                    }
+
+                    for (i = 0; i < 3; i++) {
+                        stage.addChild(gameplatforms.container[i]);
+                    }
+                    stage.update();
+
+                    //Adding the Ticker
+                    createjs.Ticker.setFPS(60);
+                    createjs.Ticker.addEventListener("tick", updategame);
+                    stage.update();
+                    collisiontest();
+
+                }
+
+
+
+
+                //THE UPDATE FUNCTION (FOR TICKER)
+                function updategame(event) {
+                    gameplatforms.updateplatforms(plane.speed); //Makes the platforms go up
+                    //CREATES A NEW PLATFORM WHEN THE LAST ONE REACHES HALF WAY UP THE SCREEN and ADDS TO SCORE
+                    if (gameplatforms.container[2].y < dheight / 2) {
+                        createjs.Sound.play("Point");
+                        currentscore += 1;
+                        score.text = currentscore;
+                        score.x = 1330 - score.getMeasuredWidth() / 2;
+                        gameplatforms.addnewplatform(side);
+                        side = !(side);
+                    }
+                    stage.addChild(gameplatforms.container[2]);
+
+                    plane.updatexpos();
+
+                    checkcollision(plane, gameplatforms.container);
+
+                    stage.update();
+
+                }
+
+                //KEY EVENT CHECKER!!!
+                document.onkeydown = function (event) {
+                    if (event.keyCode == '37' || event == 37) {  //Left Key
+                        if (plane.angle == 0) {
+                            plane.angle = 0;
+                        } else {
+                            plane.angle -= 1;
+                        }
+                    } else if (event.keyCode == '39' || event == 39) { //Right Key
+                        if (plane.angle == 4) {
+                            plane.angle = 4;
+                        } else {
+                            plane.angle += 1;
+                        }
+                    }
+                    plane.changespeed();
+                    console.log(plane.angle);
+                };
+
+
+                // FUNCTION FOR CHECKING COLLISION
+
+                function checkcollision(plane, platforms) {
+                    var planeL = plane.shape.x;
+                    var planeR = plane.shape.x + plane.width;
+                    var planeT = plane.shape.y;
+                    var planeB = plane.shape.y + plane.height;
+                    if (plane.shape.x <= barwidth || plane.shape.x >= dwidth - barwidth - plane.width) {
+                        endgame()
+
+
+                    }
+                    for (i = 0; i < 3; i++) {
+                        var currentcontainer = platforms[i]; //gets the container
+                        var numchild = currentcontainer.getNumChildren();
+
+
+                        for (b = 0; b < numchild; b++) {
+
+
+                            currentplatform = currentcontainer.getChildAt(b);
+                            var platformL = currentplatform.x;
+                            var platformR = currentplatform.x + currentplatform.getBounds().width;
+                            var platformT = currentcontainer.y;
+                            var platformB = currentcontainer.y + 90;
+                            if (collision(planeR, planeL, planeT, planeB, platformR, platformL, platformT, platformB)) {
+                                endgame();
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                function touchhandle(area) {
+                    if (area == 0) {  //Left Key
+                        if (plane.angle == 0) {
+                            plane.angle = 0;
+                        } else {
+                            plane.angle -= 1;
+                        }
+                    } else if (area == 1) { //Right Key
+                        if (plane.angle == 4) {
+                            plane.angle = 4;
+                        } else {
+                            plane.angle += 1;
+                        }
+                    }
+                }
+
+                function endgame() {
+                    createjs.Sound.play("Lose"); //Playing the Death Sound
+                    createjs.Ticker.removeAllEventListeners(); //Pausing the Game
+                    //Checking if The Score is a New Highscore
+                    if (currentscore > localStorage.getItem("Highscore")) {
+                        localStorage.setItem("Highscore", currentscore);
+                        stage.addChild(new createjs.Bitmap(Content.NewHighScore).set({ x: 165, y: 26 }));
+                    }
+                    stage.addChild(new createjs.Bitmap(Content.GameOver).set({ x: 530, y: 231 }));
+                    stage.addChild(new createjs.Bitmap(Content.HighScore).set({ x: 792, y: 406 }));
+                    stage.addChild(new createjs.Text(localStorage.getItem("Highscore"), "60px Times", "White").set({ x: 994, y: 465 }));
+                    var Restart = new createjs.Bitmap(Content.Restart).set({ x: 406, y: 422 });
+                    Restart.on("click", resetf);
+                    stage.addChild(Restart);
+                    stage.update();
+
+                }
+
+
+
+                function resetf() {
+                    side = true;
+                    plane.angle = 4;
+                    plane.speed = 5;
+                    gameplatforms.container = [];
+                    stage.removeAllChildren();
+                    start();
+                }
+
+            })
+
+            //WAS CURRENTLY EDITING THE CONSTANTS AND SIZES!!!!!!!!!!!!!!!!!!!!
+
+        </script>
+    </body>
+</html>
+
+
