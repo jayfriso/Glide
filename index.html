@@ -16,6 +16,7 @@
     </head>
     <body>
         <canvas id="mycanvas"></canvas>
+
         <script>
             //Resizing Canvas
             //Need to fix SCALING
@@ -261,7 +262,14 @@
                         localStorage.setItem("Highscore", currentscore);
                         stage.addChild(new createjs.Bitmap(Content.NewHighScore).set({ x: 165, y: 26 }));
                     }
+                    var submitScoreText = new createjs.Text("Upload Score?", "60px Arial", "black").set({ x: 630, y: 600 });
+                    //Opening up Submit Score Window
+                    submitScoreText.addEventListener("click", function (event) {
+                        window.open("submit_score.cshtml?score=" + currentscore, "submit_score_window", "width=300, height=200, screenX=500, screenY=400");
+                    })
+                    //
                     stage.addChild(new createjs.Bitmap(Content.GameOver).set({ x: 530, y: 231 }));
+                    stage.addChild(submitScoreText)
                     stage.addChild(new createjs.Bitmap(Content.HighScore).set({ x: 792, y: 406 }));
                     stage.addChild(new createjs.Text(localStorage.getItem("Highscore"), "60px Times", "White").set({ x: 994, y: 465 }));
                     var Restart = new createjs.Bitmap(Content.Restart).set({ x: 406, y: 422 });
