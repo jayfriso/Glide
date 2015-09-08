@@ -1,0 +1,29 @@
+﻿@{
+    Validation.RequireField("Name", "Product name is required.");
+    var db = Database.Open("Top_Scores");
+    var name = Request.Form["Name"];
+    var score = Request.QueryString["score"];
+
+    if (IsPost && Validation.IsValid()) {
+        if (ModelState.IsValid) {
+            var insertQuery = "INSERT INTO topscores (Name, Score) VALUES (@0, @1)";
+            db.Execute(insertQuery, name, score);
+        }
+        
+    }
+}
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title></title>
+    </head>
+    <body>
+        <form method="post" action="">
+            <input name="Name" type="text" size="20">
+            <input type="submit" value="Submit Score">
+        </form>
+        <button onclick='window.open("display_scores.cshtml","submit_scores_page", "width=500, height=500, screenX=500, screenY=400")'>View Scores</button>
+    </body>
+</html>

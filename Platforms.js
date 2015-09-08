@@ -79,15 +79,15 @@ platforms.prototype.addnewplatform = function (b) { //Where b is the boolean val
     ////Branch 4 45% and 30% (appears 15% of time)
     else if (randomnum > 0.7 && randomnum <= 0.85) {
         if (b) {
+            var platform41 = new createjs.Bitmap(this.branch2R);
+            platform41.x =  width - p2w - barwidth;
+            var platform42 = new createjs.Bitmap(this.branch1L);
+            platform42.x = barwidth;
+        } else {
             var platform41 = new createjs.Bitmap(this.branch2L);
             platform41.x = barwidth;
             var platform42 = new createjs.Bitmap(this.branch1R);
             platform42.x = width - p1w - barwidth;
-        } else {
-            var platform41 = new createjs.Bitmap(this.branch2R);
-            platform41.x = width - p2w - barwidth;
-            var platform42 = new createjs.Bitmap(this.branch1L);
-            platform42.x = barwidth;
         }
         platform41.setBounds(0, 0, p2w, ph);
         platform42.setBounds(0, 0, p1w, ph);
